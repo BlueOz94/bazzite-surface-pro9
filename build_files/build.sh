@@ -6,8 +6,21 @@ echo "=== Surface Pro 9 Custom Image Build ==="
 
 ### 1. Add linux-surface repository (provides patched kernel + supporting packages)
 # Official repo: https://github.com/linux-surface/linux-surface
-# Packages for current Fedora release (Bazzite is based on Fedora 43)
-dnf5 config-manager addrepo --from-repofile=https://pkg.surfacelinux.com/fedora/linux-surface.repo
+# We pin to f43 because the current bazzite:stable base is Fedora 44 but linux-surface
+# repo may not have f44 packages yet (causes 404 on repodata).
+# Using f43 packages + --releasever=43 for the surface-specific dnf transaction.
+cat > /etc/yum.repos.d/linux-surface.repo << 'EOR'
+[linux-surface]
+name=linux-surface
+baseurl=https://pkg.surfacelinux.com/fedora/f43/
+enabled=1
+skip_if_unavailable=1
+gpgkey=https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc
+gpgcheck=1
+enabled_metadata=1
+type=rpm-md
+repo_gpgcheck=0
+EOR
 
 ### 2. Remove stock kernel packages (to allow clean swap to kernel-surface)
 # This follows patterns used in uBlue custom Surface images.
@@ -30,7 +43,7 @@ done
 #
 # Note: DNF5 kernel installation on ostree/bootc images is not officially supported by Fedora but works reliably at *build time*.
 echo "Installing linux-surface kernel and drivers..."
-dnf5 install -y --allowerasing \
+dnf5 install -y --allowerasing --releasever=43 \
     kernel-surface \
     kernel-surface-core \
     kernel-surface-modules \
